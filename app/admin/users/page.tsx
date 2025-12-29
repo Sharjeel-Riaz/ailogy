@@ -50,6 +50,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/hooks/use-toast";
 import Unauthorized from "../_components/Unauthorized";
+import Image from "next/image";
 
 interface User {
   id: number;
@@ -61,7 +62,23 @@ interface User {
   stripeStatus: string;
   plan: string | null;
   credits: number | null;
+  // User profile fields
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  imageUrl: string | null;
 }
+
+// Helper to get display name
+const getDisplayName = (user: User): string => {
+  if (user.firstName || user.lastName) {
+    return `${user.firstName || ""} ${user.lastName || ""}`.trim();
+  }
+  if (user.email) {
+    return user.email.split("@")[0];
+  }
+  return "Unknown User";
+};
 
 function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -210,7 +227,10 @@ function UsersPage() {
     (user) =>
       user.userId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.plan?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.stripeStatus?.toLowerCase().includes(searchTerm.toLowerCase())
+      user.stripeStatus?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const activeCount = users.filter((u) => u.stripeStatus === "active").length;
@@ -403,8 +423,8 @@ function UsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>User ID</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
                   <TableHead>Plan</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Credits</TableHead>
@@ -427,9 +447,37 @@ function UsersPage() {
                         user.stripeStatus === "suspended" ? "bg-red-50" : ""
                       }
                     >
-                      <TableCell>{user.id}</TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {user.userId?.slice(0, 15)}...
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {user.imageUrl ? (
+                            <img
+                              src={user.imageUrl}
+                              alt={getDisplayName(user)}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-xs font-medium text-gray-600">
+                                {(
+                                  user.firstName?.[0] ||
+                                  user.email?.[0] ||
+                                  "U"
+                                ).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-medium">
+                              {getDisplayName(user)}
+                            </p>
+                            <p className="text-xs text-gray-500 font-mono">
+                              {user.userId?.slice(0, 12)}...
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{user.email || "-"}</span>
                       </TableCell>
                       <TableCell>
                         <Badge

@@ -2,8 +2,9 @@ import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { db } from "@/utils/db";
-import { UserSubscription } from "@/utils/schema";
+import { UserSubscription, User } from "@/utils/schema";
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 
 // This should be your webhook endpoint, typically at /api/webhooks/clerk
 export async function POST(req: Request) {
@@ -55,9 +56,22 @@ export async function POST(req: Request) {
   const eventType = evt.type;
 
   if (eventType === "user.created") {
-    const { id } = evt.data;
+    const { id, email_addresses, first_name, last_name, image_url } = evt.data;
+    const primaryEmail = email_addresses?.[0]?.email_address || "";
 
     try {
+      // Create user profile record
+      await db
+        .insert(User)
+        .values({
+          clerkId: id,
+          email: primaryEmail,
+          firstName: first_name || null,
+          lastName: last_name || null,
+          imageUrl: image_url || null,
+        })
+        .execute();
+
       // Create a new subscription record for the user
       await db
         .insert(UserSubscription)
@@ -75,10 +89,55 @@ export async function POST(req: Request) {
         })
         .execute();
 
-      return new NextResponse("User subscription created", { status: 200 });
+      return new NextResponse("User created successfully", { status: 200 });
     } catch (error) {
-      console.error("Error creating user subscription:", error);
-      return new NextResponse("Error creating user subscription", {
+      console.error("Error creating user:", error);
+      return new NextResponse("Error creating user", {
+        status: 500,
+      });
+    }
+  }
+
+  if (eventType === "user.updated") {
+    const { id, email_addresses, first_name, last_name, image_url } = evt.data;
+    const primaryEmail = email_addresses?.[0]?.email_address || "";
+
+    try {
+      // Update user profile
+      await db
+        .update(User)
+        .set({
+          email: primaryEmail,
+          firstName: first_name || null,
+          lastName: last_name || null,
+          imageUrl: image_url || null,
+          updatedAt: new Date(),
+        })
+        .where(eq(User.clerkId, id))
+        .execute();
+
+      return new NextResponse("User updated successfully", { status: 200 });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      return new NextResponse("Error updating user", {
+        status: 500,
+      });
+    }
+  }
+
+  if (eventType === "user.deleted") {
+    const { id } = evt.data;
+
+    try {
+      // Delete user profile (subscription can be kept for records or deleted too)
+      if (id) {
+        await db.delete(User).where(eq(User.clerkId, id)).execute();
+      }
+
+      return new NextResponse("User deleted successfully", { status: 200 });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return new NextResponse("Error deleting user", {
         status: 500,
       });
     }

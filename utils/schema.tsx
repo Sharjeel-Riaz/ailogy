@@ -103,6 +103,27 @@ export const messageRelations = relations(Message, ({ one }) => ({
   }),
 }));
 
+// User Profile Table - stores Clerk user data
+export const User = pgTable(
+  "user",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    clerkId: varchar("clerkId").notNull().unique(),
+    email: varchar("email").notNull(),
+    firstName: varchar("firstName"),
+    lastName: varchar("lastName"),
+    imageUrl: varchar("imageUrl"),
+    createdAt: timestamp("createdAt").defaultNow(),
+    updatedAt: timestamp("updatedAt").defaultNow(),
+  },
+  (table) => {
+    return {
+      clerkIdIdx: index("user_clerk_id_idx").on(table.clerkId),
+      emailIdx: index("user_email_idx").on(table.email),
+    };
+  }
+);
+
 // Admin User Table
 export const AdminUser = pgTable(
   "adminUser",
