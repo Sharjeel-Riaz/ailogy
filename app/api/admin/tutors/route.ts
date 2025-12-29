@@ -4,6 +4,8 @@ import { Tutor, Category, AdminUser } from "@/utils/schema";
 import { desc, eq } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const { userId } = auth();

@@ -10,6 +10,8 @@ import {
 import { eq, sql, desc } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const { userId } = auth();

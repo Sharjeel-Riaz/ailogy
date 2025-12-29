@@ -6,7 +6,7 @@ import { db } from "@/utils/db";
 import { UserSubscription } from "@/utils/schema";
 import { eq } from "drizzle-orm";
 
-export const dynamic = "auto";
+export const dynamic = 'force-dynamic';
 
 const billingUrl = absoluteUrl("/dashboard/billing");
 
