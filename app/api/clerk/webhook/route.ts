@@ -6,7 +6,6 @@ import { UserSubscription, User } from "@/utils/schema";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 
-// This should be your webhook endpoint, typically at /api/webhooks/clerk
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
@@ -77,15 +76,15 @@ export async function POST(req: Request) {
         .insert(UserSubscription)
         .values({
           userId: id,
-          stripeCustomerId: "not_set", // Placeholder until they actually subscribe
+          stripeCustomerId: "not_set",
           stripeSubscriptionId: "not_set",
           stripePriceId: "not_set",
           stripeStatus: "inactive",
           plan: "free",
-          credits: 10000, // Default credits for free plan
+          credits: 10000,
           stripeCurrentPeriodEnd: new Date(
             Date.now() + 30 * 24 * 60 * 60 * 1000
-          ), // 30 days from now
+          ),
         })
         .execute();
 
@@ -103,7 +102,6 @@ export async function POST(req: Request) {
     const primaryEmail = email_addresses?.[0]?.email_address || "";
 
     try {
-      // Update user profile
       await db
         .update(User)
         .set({
@@ -129,7 +127,6 @@ export async function POST(req: Request) {
     const { id } = evt.data;
 
     try {
-      // Delete user profile (subscription can be kept for records or deleted too)
       if (id) {
         await db.delete(User).where(eq(User.clerkId, id)).execute();
       }
