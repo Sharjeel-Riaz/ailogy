@@ -26,7 +26,7 @@ export async function GET() {
     const formattedTemplates = templates.map((template) => ({
       name: template.name,
       desc: template.description || "",
-      icon: template.icon || "https://img.icons8.com/color/96/file.png",
+      icon: template.icon || "/icons/coursework/placeholder.svg",
       category: template.category || "General",
       slug: template.slug,
       aiPrompt: template.aiPrompt,

@@ -1,6 +1,7 @@
 import React from "react";
 import { TEMPLATE } from "./TemplateListSection";
 import { v4 as uuidv4 } from "uuid";
+import Image from "next/image";
 import Link from "next/link";
 
 function TemplateCard(item: TEMPLATE) {
@@ -12,16 +13,13 @@ function TemplateCard(item: TEMPLATE) {
     "
         key={uuidv4()}
       >
-        <img
-          src={item.icon}
+        <Image
+          src={item.icon || "/icons/coursework/placeholder.svg"}
           alt="icon"
           width={50}
           height={50}
           className="object-contain"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src =
-              "https://img.icons8.com/color/96/file.png";
-          }}
+          unoptimized
         />
         <h2 className="font-medium text-lg line-clamp-1">{item.name}</h2>
         <p className="text-gray-500 line-clamp-3">{item.desc}</p>
