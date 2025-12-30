@@ -84,12 +84,13 @@ function CreateContentSection(props: PROPS) {
     const FinalAIPrompt = JSON.stringify(formData) + ", " + selectedPrompt;
 
     const result = await chatSession.sendMessage(FinalAIPrompt);
+    const aiResponseText = result?.response.text() ?? "";
 
-    setAiOutput(result?.response.text());
+    setAiOutput(aiResponseText);
     await SaveInDb(
       JSON.stringify(formData),
       selectedTemplate?.slug,
-      result?.response.text()
+      aiResponseText
     );
     setTotalUsage(totalUsage + 1); // Increment usage
     setLoading(false);

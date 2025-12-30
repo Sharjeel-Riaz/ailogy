@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
-import {
-  GoogleGenerativeAI,
-  HarmCategory,
-  HarmBlockThreshold,
-} from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { MemoryManager, TutorKey } from "@/lib/memory";
 import { rateLimit } from "@/lib/rate-limit";
 import { db } from "@/utils/db";
@@ -12,7 +8,7 @@ import { Tutor, Message } from "@/utils/schema";
 import { eq } from "drizzle-orm";
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(apiKey!);
+const ai = new GoogleGenAI({ apiKey });
 
 export async function POST(
   request: NextRequest,
@@ -94,59 +90,14 @@ export async function POST(
       relevantHistory = similarDocs.map((doc) => doc.pageContent).join("\n");
     }
 
-    // Initialize Gemini model
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    const chatSession = model.startChat({
-      history: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: `You are ${tutorData.name}, a friendly and engaging tutor. Your personality is ${tutorData.description}. Please respond in a casual, approachable manner, as if speaking to a student you know well. Here are your instructions: ${tutorData.instructions}
+    // Build the system prompt with tutor context
+    const systemPrompt = `You are ${tutorData.name}, a friendly and engaging tutor. Your personality is ${tutorData.description}. Please respond in a casual, approachable manner, as if speaking to a student you know well. Here are your instructions: ${tutorData.instructions}
 
 Relevant past information:
 ${relevantHistory}
 
 Recent chat history:
-${chatHistory}`,
-            },
-          ],
-        },
-        {
-          role: "model",
-          parts: [
-            {
-              text: "Got it! I'm ready to chat in a friendly, tutor-like way. How can I help you today?",
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 1000,
-      },
-      safetySettings: [
-        {
-          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-      ],
-    });
+${chatHistory}`;
 
     // Save user message to database
     await db.insert(Message).values({
@@ -156,12 +107,20 @@ ${chatHistory}`,
       tutorId: params.chatId,
     });
 
-    // Send message to Gemini
-    const result = await chatSession.sendMessage(prompt);
-    const response = result.response;
+    // Send message to Gemini using new @google/genai SDK
+    const fullPrompt = `${systemPrompt}\n\nUser: ${prompt}`;
+    const response = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: fullPrompt,
+      config: {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 1000,
+      },
+    });
 
-    // Ensure response.text() is called correctly
-    const responseText = response.text();
+    const responseText = response.text ?? "";
     console.log("Response from AI:", responseText); // Log the response
     await memoryManager.writeToHistory(`User: ${prompt}\n`, tutorKey);
     await memoryManager.writeToHistory(`Tutor: ${responseText}\n`, tutorKey);
