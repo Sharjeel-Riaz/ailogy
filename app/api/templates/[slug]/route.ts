@@ -60,11 +60,17 @@ export async function GET(
   }
 }
 
-function parseFormFields(formFields: string | null): any[] {
+function parseFormFields(formFields: string | any[] | null): any[] {
   if (!formFields) return [];
-  try {
-    return JSON.parse(formFields);
-  } catch {
-    return [];
+  // If already an array, return as is
+  if (Array.isArray(formFields)) return formFields;
+  // If string, try to parse
+  if (typeof formFields === "string") {
+    try {
+      return JSON.parse(formFields);
+    } catch {
+      return [];
+    }
   }
+  return [];
 }

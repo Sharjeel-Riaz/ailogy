@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from "react";
 import { TEMPLATE } from "../../_components/TemplateListSection";
-import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -31,8 +30,19 @@ function FormSection({ selectedTemplate, userFormInput, loading }: PROPS) {
 
   return (
     <div className="p-5 shadow-md border rounded-lg bg-white">
-      {/* @ts-ignore */}
-      <Image src={selectedTemplate?.icon} alt="icon" width={70} height={70} />
+      {selectedTemplate?.icon && (
+        <img
+          src={selectedTemplate.icon}
+          alt="icon"
+          width={70}
+          height={70}
+          className="object-contain"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src =
+              "https://img.icons8.com/color/96/file.png";
+          }}
+        />
+      )}
       <h2 className="font-bold text-2xl mb-2 text-primary">
         {selectedTemplate?.name}
       </h2>
